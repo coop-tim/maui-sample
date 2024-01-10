@@ -1,0 +1,2 @@
+filename,searchtext,replacementtext
+Info.plist,<string>0.0.1</string>,<string>#{MAJOR}.#{MINOR}.#{PATCH}</string>

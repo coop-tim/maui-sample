@@ -1,0 +1,116 @@
+parameters:
+- name: solution
+  type: string
+  default: '**/*.sln'
+- name: sdk
+  type: string
+  default: '8.x'
+- name: buildConfiguration
+  type: string
+  default: 'Release'
+- name: environment
+  type: string
+  default: 'Alpha'
+
+jobs:
+  - job: Build
+    pool:
+      vmImage: 'windows-2022'
+    variables:
+      - group: App-${{ parameters.environment }}
+      - group: App-Android-${{ parameters.environment }}
+    steps:
+    - task: ExtractVersionFromTag@1
+      displayName: 'Get git tag version'
+      inputs:
+        projectFolderPath: '$(Build.SourcesDirectory)'
+
+    - task: qetza.replacetokens.replacetokens-task.replacetokens@5
+      displayName: 'Replace tokens in configs'
+      inputs:
+        rootDirectory: '$(System.DefaultWorkingDirectory)'
+        targetFiles: |
+          **/appsettings.json
+          **/appsettings.Release.json
+          **/GoogleService-Info.plist
+          **/google-services.json
+        tokenPattern: octopus
+        escapeType: none
+        enableTelemetry: false
+
+    - task: PowerShell@2
+      displayName: Copy build files
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(System.DefaultWorkingDirectory)\build\Release\prebuild.ps1'
+        arguments: '-Dir "$(System.DefaultWorkingDirectory)\build\Release"'
+
+    - task: UseDotNet@2
+      displayName: 'Use dotnet'
+      inputs:
+        packageType: 'sdk'
+        version: ${{ parameters.sdk }}
+
+    - task: JavaToolInstaller@0
+      displayName: Install Java SDK
+      inputs:
+        versionSpec: '11'
+        jdkArchitectureOption: 'x64'
+        jdkSourceOption: 'PreInstalled'
+
+    - powershell: dotnet workload install maui-android maui-ios
+      displayName: Install .NET MAUI Workload
+
+    - task: PowerShell@2
+      displayName: Run nuget fix
+      inputs:
+        targetType: 'filePath'
+        filePath: 'build\pipeline-nuget-fix.ps1'
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+
+    - task: DownloadSecureFile@1
+      name: keystoreDownload
+      displayName: 'Download Keystore'
+      inputs:
+        secureFile: keystore_${{ parameters.environment }}.keystore
+
+    - task: CmdLine@2
+      displayName: 'Build project'
+      inputs:
+        script: >
+          dotnet publish MauiSample/MauiSample.csproj -f "net8.0-android" -c Release 
+          /p:ApplicationId=$(ApplicationId) 
+          /p:ApplicationDisplayVersion=$(MAJOR).$(MINOR).$(PATCH)
+          /p:ApplicationVersion=$(MAJOR)$(MINOR)$(PATCH)
+          /p:AndroidSigningKeyPass=$(SigningKeyPassword) 
+          /p:AndroidSigningStorePass=$(KeyStorePassword) 
+          /p:AndroidSigningKeyStore=$(keystoreDownload.secureFilePath) 
+          /p:AndroidSigningKeyAlias=$(SigningKeyAlias) 
+          /p:AndroidKeyStore=true
+
+    - task: CopyFiles@2
+      displayName: 'Copy files to: $(build.artifactstagingdirectory)'
+      inputs:
+        SourceFolder: '$(system.defaultworkingdirectory)'
+        Contents: '**/publish/*-Signed.aab'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+        ArtifactName: 'drop_maui_android'
+        publishLocation: 'Container'  
+
+    - task: AppCenterDistribute@3
+      inputs:
+        serverEndpoint: 'Android ${{ parameters.environment }}'
+        appSlug: $(AppCenterSlug)
+        appFile: '$(build.artifactstagingdirectory)/**/*-Signed.aab'  # Change the file pattern based on your build output
+        symbolsOption: 'None'
+        destinationType: '$(DestinationType)'
+        distributionGroupId: '$(DistributionGroups)'

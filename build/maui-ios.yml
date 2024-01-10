@@ -1,0 +1,138 @@
+parameters:
+- name: solution
+  type: string
+  default: '**/*.sln'
+- name: sdk
+  type: string
+  default: '8.x'
+- name: buildConfiguration
+  type: string
+  default: 'Release'
+- name: p12file
+  type: string
+  default: 'ios-Alpha.p12'
+- name: provisionProfile
+  type: string
+  default: 'ios-Alpha.mobileprovision'
+- name: environment
+  type: string
+  default: 'Alpha'
+
+jobs:
+  - job: Build
+    pool:
+      vmImage: 'macos-13'
+      demands: xcode
+    variables:
+      - group: App-${{ parameters.environment }}
+      - group: App-iOS-${{ parameters.environment }}
+    steps:
+    - script: |
+        echo Mac OS version:
+        sw_vers -productVersion
+        echo
+        echo Installed Xcode versions:
+        ls /Applications | grep 'Xcode'
+        echo
+        echo currently selected xcode:
+        xcrun xcode-select --print-path
+        echo
+        echo selecting latest xcode...
+        unset DEVELOPER_DIR
+        echo '##vso[task.setvariable variable=MD_APPLE_SDK_ROOT;]'/Applications/Xcode_15.0.app;sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+        xcrun xcode-select --print-path
+        xcodebuild -version
+      displayName: Select Xcode Version
+
+    - task: ExtractVersionFromTag@1
+      displayName: 'Get git tag version'
+      inputs:
+        projectFolderPath: '$(Build.SourcesDirectory)'
+
+    - task: qetza.replacetokens.replacetokens-task.replacetokens@5
+      displayName: 'Replace tokens in configs'
+      inputs:
+        rootDirectory: '$(System.DefaultWorkingDirectory)'
+        targetFiles: |
+          **/appsettings.json
+          **/appsettings.Release.json
+          **/replacements.csv
+          **/Info.plist
+          **/GoogleService-Info.plist
+          **/google-services.json
+        tokenPattern: octopus
+        escapeType: none
+        enableTelemetry: false
+
+    - task: Bash@3
+      displayName: Copy build files
+      inputs:
+        targetType: 'filePath'
+        filePath: '$(System.DefaultWorkingDirectory)/build/Release/prebuild.sh'
+        arguments: '"$(System.DefaultWorkingDirectory)/build/Release"'
+
+    - task: UseDotNet@2
+      displayName: 'Use dotnet'
+      inputs:
+        packageType: 'sdk'
+        version: ${{ parameters.sdk }}
+
+    - powershell: dotnet workload install maui-android maui-ios
+      displayName: Install .NET MAUI Workload
+
+    - task: InstallAppleCertificate@2
+      name: certTask
+      displayName: 'Install Apple P12 Cert'
+      inputs:
+        certSecureFile: '${{ parameters.p12file }}'
+        certPwd: '$(P12Password)'
+        keychain: 'temp'
+
+    - task: InstallAppleProvisioningProfile@1
+      displayName: 'Install Apple Provisioning Profile'
+      inputs:
+        provisioningProfileLocation: 'secureFiles'
+        provProfileSecureFile: '${{ parameters.provisionProfile }}'
+
+    - task: DotNetCoreCLI@2
+      inputs:
+        command: 'restore'
+        projects: '**/*.csproj'
+
+    - task: CmdLine@2
+      displayName: 'Build project'
+      inputs:
+        script: >
+          dotnet publish MauiSample/MauiSample.csproj -f "net8.0-ios" -c Release -v n
+          /p:ArchiveOnBuild=true 
+          /p:EnableAssemblyILStripping=false 
+          /p:ApplicationId=$(ApplicationId) 
+          /p:ApplicationDisplayVersion=$(MAJOR).$(MINOR).$(PATCH)
+          /p:ApplicationVersion=$(MAJOR)$(MINOR)$(PATCH)
+          /p:ProvisioningType=manual
+          /p:CodesignKey="$(certTask.signingIdentity)"
+          /p:CodesignProvision="$(ProvisionProfileName)"
+        
+    - task: CopyFiles@2
+      displayName: 'Copy files to: $(build.artifactstagingdirectory)'
+      inputs:
+        SourceFolder: '$(system.defaultworkingdirectory)'
+        Contents: '**/publish/*.ipa'
+        TargetFolder: '$(build.artifactstagingdirectory)'
+        CleanTargetFolder: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        PathtoPublish: '$(build.artifactstagingdirectory)'
+        ArtifactName: 'drop_maui_ios'
+        publishLocation: 'Container'  
+
+    - task: AppCenterDistribute@3
+      inputs:
+        serverEndpoint: 'iOS ${{ parameters.environment }}'
+        appSlug: $(AppCenterSlug)
+        appFile: '$(build.artifactstagingdirectory)/**/*.ipa'  # Change the file pattern based on your build output
+        symbolsOption: 'None'
+        destinationType: '$(DestinationType)'
+        distributionGroupId: '$(DistributionGroups)'

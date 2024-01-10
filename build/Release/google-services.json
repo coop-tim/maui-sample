@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "#{FirebaseProjectNumber}",
+    "project_id": "#{FirebaseProjectId}",
+    "storage_bucket": "#{FirebaseStorageBucket}"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "#{FirebaseAppId}",
+        "android_client_info": {
+          "package_name": "com.companyname.mauisample"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "#{FirebaseApiKey}"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
