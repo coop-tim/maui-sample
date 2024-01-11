@@ -15,6 +15,8 @@ I would like to see more seamless integration from Microsoft soon for this basic
 
 ⚠️ These steps are necessary at time of writing to ensure you can build the project for both Android and iOS.
 
+If you have already tried to get this working and failed, clear all your nuget caches first, and close Visual Studio.
+
 ## Long paths
 
 Problems with the Xamarin.Firebase.iOS.Core package mean that installation can fail on Windows due to long paths See https://github.com/dotnet/maui/issues/17828. To combat this, you need to enable long paths in the registry and move your local nuget cache:
@@ -37,6 +39,8 @@ Create a folder named `C:\n`. Add an environment variable:
 `NUGET_PACKAGES` = `C:\n`
 
 **Install package !!!manually via CLI!!!**
+
+Don't open or build the project in VS until you have done the next part.
 
 Navigate to your project folder and run in a command line:
 
