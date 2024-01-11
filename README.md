@@ -18,7 +18,7 @@ I would like to see more seamless integration from Microsoft soon for this basic
 
 ⚠️ These steps are necessary at time of writing to ensure you can build the project for both Android and iOS.
 
-If you have already tried to get this working and failed, clear all your nuget caches first, and close Visual Studio.
+If you have already tried to get this working and failed, clear all your nuget caches first, and close Visual Studio. Delete bin and obj folders.
 
 ## Long paths
 
