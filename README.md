@@ -19,7 +19,7 @@ If you have already tried to get this working and failed, clear all your nuget c
 
 ## Long paths
 
-Problems with the Xamarin.Firebase.iOS.Core package mean that installation can fail on Windows due to long paths See https://github.com/dotnet/maui/issues/17828. To combat this, you need to enable long paths in the registry and move your local nuget cache:
+Problems with the Xamarin.Firebase.iOS.Core package mean that installation can fail on Windows due to long paths See https://github.com/dotnet/maui/issues/17828. To combat this, you need to enable long paths in the registry and move your local nuget cache. You should also keep the path to your project as short as possible.:
 
 **Powershell**
 
