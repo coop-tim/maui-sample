@@ -122,7 +122,7 @@ You will need to configure variable libraries and secure files for you signing c
 
 5. Create App Center service connections to each project in the DevOps project settings
 
-6. Create and run the pipelines (one for each platform)
+6. Tag your commit with a version, Create and run the pipelines (one for each platform)
     1. On first run, you will need to give permission for the pipelines to access the secure files and libraries
     1. When running, you are asked to fill in the names of the secure files and environment name. They should be prefilled. It's not possible to put these variables in the library as they need to be pre-compiled into the yaml at time of writing due to a long standing bug https://github.com/microsoft/azure-pipelines-tasks/issues/6885. 
 
