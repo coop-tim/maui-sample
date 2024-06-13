@@ -3,9 +3,6 @@ using Android.Content;
 using Android.Content.PM;
 using Android.OS;
 using Android.Runtime;
-using Microsoft.AppCenter;
-using Microsoft.AppCenter.Analytics;
-using Microsoft.AppCenter.Crashes;
 using Plugin.Firebase.CloudMessaging;
 
 namespace MauiSample;
@@ -17,17 +14,6 @@ public class MainActivity : MauiAppCompatActivity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         var intent = this.Intent;
-
-        var config = MauiProgram.GetService<IConfiguration>();
-        var secret = config.GetSection("AppCenter:Secret")?.Value;
-        if (!string.IsNullOrEmpty(secret))
-        {
-            if (!AppCenterConfigured)
-            {
-                AppCenter.Configure(secret);
-                AppCenter.Start(typeof(Crashes), typeof(Analytics));
-            }
-        }
 
         HandleIntent(Intent);
         CreateNotificationChannelIfNeeded();

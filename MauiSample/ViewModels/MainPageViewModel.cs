@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using MauiSample.Models.Permissions;
-using Microsoft.AppCenter.Crashes;
 using Plugin.Firebase.CloudMessaging;
 
 namespace MauiSample.ViewModels;
@@ -43,7 +42,6 @@ public partial class MainPageViewModel(ILogger<MainPageViewModel> logger) : Obse
         }
         catch (Exception ex)
         {
-            Crashes.TrackError(ex);
             _logger.LogError(ex, "Error getting firebase token: {message}", ex.Message);
         }
     }
