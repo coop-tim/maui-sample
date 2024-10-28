@@ -1,5 +1,7 @@
 # maui-sample
 
+Update 2024-10-28: This sample is out of date - use Plugin.Firebase v3.0.0+ which relies on the AdamE packages instead of the Xamarin ones. Also don't use App Center.
+
 🥳This repository contains a working implementation of MAUI .NET 8 for iOS and Android with the following:
 - Firebase Cloud Messaging 
 - Firebase Analytics
